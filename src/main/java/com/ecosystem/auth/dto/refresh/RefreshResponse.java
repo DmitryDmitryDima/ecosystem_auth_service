@@ -1,5 +1,4 @@
-package com.ecosystem.auth.dto;
-
+package com.ecosystem.auth.dto.refresh;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -8,10 +7,12 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class LoginResponseDTO {
+public class RefreshResponse {
 
     private String accessToken;
 
-    // рандомный набор символов, в бд хранится в хешированном виде
+    // новый рефреш токен
     private String refreshToken;
+
+    private Long expired_at;
 }

@@ -1,9 +1,11 @@
 package com.ecosystem.auth.controller;
 
 
-import com.ecosystem.auth.dto.LoginRequestDTO;
-import com.ecosystem.auth.dto.LoginResponseDTO;
-import com.ecosystem.auth.dto.ValidationResponseDTO;
+import com.ecosystem.auth.dto.login.LoginRequestDTO;
+import com.ecosystem.auth.dto.login.LoginResponseDTO;
+import com.ecosystem.auth.dto.refresh.RefreshRequest;
+import com.ecosystem.auth.dto.refresh.RefreshResponse;
+import com.ecosystem.auth.dto.validation.ValidationResponseDTO;
 import com.ecosystem.auth.service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -24,10 +26,11 @@ public class AuthController {
     public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO loginRequest){
 
         Optional<LoginResponseDTO> authResult = authService.authenticate(loginRequest);
-        return authResult.map(ResponseEntity::ok)
+        return authResult
+                .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
 
-        // send access token and refresh token
+
     }
 
     @GetMapping("/validate")
@@ -39,6 +42,19 @@ public class AuthController {
         Optional<ValidationResponseDTO> validation = authService.validateToken(authHeader.substring(7));
         return validation.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
     }
+
+
+    // обновляем access токен через refresh токен
+    @PostMapping("/refresh")
+    public ResponseEntity<RefreshResponse> refresh(@RequestBody RefreshRequest request){
+
+        Optional<RefreshResponse> refreshResult = authService.refresh(request);
+        return refreshResult
+                .map(ResponseEntity::ok)
+                .orElseGet(()->ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
+    }
+
+
 
 
 

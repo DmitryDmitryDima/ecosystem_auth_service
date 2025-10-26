@@ -1,7 +1,9 @@
 package com.ecosystem.auth.utils;
 
 
-import com.ecosystem.auth.dto.ValidationResponseDTO;
+import com.ecosystem.auth.dto.login.LoginResponseDTO;
+import com.ecosystem.auth.dto.utils.AccessTokenInfo;
+import com.ecosystem.auth.dto.validation.ValidationResponseDTO;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.JwtException;
@@ -13,7 +15,6 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
-import java.security.SignatureException;
 import java.util.Base64;
 import java.util.Date;
 import java.util.Optional;
@@ -33,15 +34,20 @@ public class JWTUtils {
 
 
     // создаем токен, вкладывая информацию о uuid, username, role (эта инфа будет передана вглубь микросервисов)
-    public String generateToken(UUID uuid, String username, String role){
-        return Jwts.builder()
+    public AccessTokenInfo generateToken(UUID uuid, String username, String role){
+        Date expirationTime = new Date(System.currentTimeMillis() + 1000 * 60 * 60 *5);
+
+        String accessToken = Jwts.builder()
                 .subject(uuid.toString())
                 .claim("username", username)
                 .claim("role", role)
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 *5))  // 5 часов
+                .expiration(expirationTime)  // 5 часов
                 .signWith(secretKey)
                 .compact();
+        AccessTokenInfo accessTokenInfo = new AccessTokenInfo(accessToken, expirationTime.getTime());
+
+        return accessTokenInfo;
     }
 
 

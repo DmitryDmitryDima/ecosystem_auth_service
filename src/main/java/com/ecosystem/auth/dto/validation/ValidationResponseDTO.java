@@ -1,4 +1,4 @@
-package com.ecosystem.auth.dto;
+package com.ecosystem.auth.dto.validation;
 
 
 import lombok.AllArgsConstructor;

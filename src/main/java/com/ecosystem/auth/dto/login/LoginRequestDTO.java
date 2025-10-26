@@ -1,4 +1,4 @@
-package com.ecosystem.auth.dto;
+package com.ecosystem.auth.dto.login;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
