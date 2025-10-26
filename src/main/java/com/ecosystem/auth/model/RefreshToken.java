@@ -1,12 +1,16 @@
 package com.ecosystem.auth.model;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.Instant;
 import java.util.UUID;
 
 @Entity
 @Table(name = "refresh_tokens")
+@Getter
+@Setter
 public class RefreshToken {
 
 
@@ -23,11 +27,11 @@ public class RefreshToken {
 
 
     @Column
-    private Instant createdAt;
+    private Instant created_at;
 
     // время, после которого будет считаться просроченным
     @Column
-    private Instant expiredAt;
+    private Instant expired_at;
 
 
     // если true, токен считается отозванным
