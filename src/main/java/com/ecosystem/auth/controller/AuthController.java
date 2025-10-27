@@ -49,6 +49,7 @@ public class AuthController {
         if(authHeader == null || !authHeader.startsWith("Bearer ")) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
+        System.out.println("validation here for "+authHeader);
         Optional<ValidationResponseDTO> validation = authService.validateToken(authHeader.substring(7));
         return validation.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
     }
