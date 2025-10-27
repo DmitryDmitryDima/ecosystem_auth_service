@@ -35,7 +35,7 @@ public class JWTUtils {
 
     // создаем токен, вкладывая информацию о uuid, username, role (эта инфа будет передана вглубь микросервисов)
     public AccessTokenInfo generateToken(UUID uuid, String username, String role){
-        Date expirationTime = new Date(System.currentTimeMillis() + 1000 * 60 * 60 *5);
+        Date expirationTime = new Date(System.currentTimeMillis() + 1000 * 60 * 15);
 
         String accessToken = Jwts.builder()
                 .subject(uuid.toString())

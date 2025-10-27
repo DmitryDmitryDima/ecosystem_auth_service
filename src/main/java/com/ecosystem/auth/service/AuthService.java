@@ -2,8 +2,11 @@ package com.ecosystem.auth.service;
 
 import com.ecosystem.auth.dto.login.LoginRequestDTO;
 import com.ecosystem.auth.dto.login.LoginResponseDTO;
+import com.ecosystem.auth.dto.logout.SimpleLogoutRequest;
 import com.ecosystem.auth.dto.refresh.RefreshRequest;
 import com.ecosystem.auth.dto.refresh.RefreshResponse;
+import com.ecosystem.auth.dto.registration.RegistrationAnswer;
+import com.ecosystem.auth.dto.registration.RegistrationRequest;
 import com.ecosystem.auth.dto.utils.AccessTokenInfo;
 import com.ecosystem.auth.dto.validation.ValidationResponseDTO;
 import com.ecosystem.auth.model.RefreshToken;
@@ -11,6 +14,7 @@ import com.ecosystem.auth.model.User;
 import com.ecosystem.auth.repository.RefreshTokenRepository;
 import com.ecosystem.auth.repository.UserRepository;
 import com.ecosystem.auth.utils.JWTUtils;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -96,28 +100,24 @@ public class AuthService {
 
         User user = userBox.get();
 
-
+        // проверка пароля
         boolean passwordCheck = passwordEncoder.matches(loginRequest.getPassword(), user.getPassword());
 
         if (!passwordCheck) return Optional.empty();
 
-        // генерируем access токен на 10 часов
+        // генерируем access токен на 15 минут
         AccessTokenInfo accessTokenResponse = jwtUtils.generateToken(user.getId(), user.getUsername(), user.getRole());
 
 
 
         String refreshToken;
-        // генерируем, шифруем и сохраняем в бд access token
+        // генерируем, шифруем и сохраняем в бд refresh token
         try {
             refreshToken = generateAndSaveRefreshToken(user);
         }
         catch (Exception e){
             return Optional.empty();
         }
-
-
-
-
 
         return Optional.of(new LoginResponseDTO(accessTokenResponse.getAccessToken(),
                 refreshToken, accessTokenResponse.getExpired_at()));
@@ -136,8 +136,7 @@ public class AuthService {
 
 
     // обновляем access и refresh токены с помощью refresh токена
-
-    // todo проверка на просрочку и отзыв
+    @Transactional
     public Optional<RefreshResponse> refresh(RefreshRequest request){
 
 
@@ -154,7 +153,20 @@ public class AuthService {
 
         if (tokenCheck.isEmpty()) return Optional.empty();
 
-        User user = tokenCheck.get().getUser();
+        RefreshToken tokenEntity = tokenCheck.get();
+
+        // проверка на бан
+        if (tokenEntity.isRevoked()){
+            return Optional.empty();
+        }
+
+        // проверка на просрочку
+        if (Instant.now().isAfter(tokenEntity.getExpired_at())) {
+            tokenEntity.setRevoked(true);
+            return Optional.empty();
+        }
+
+        User user = tokenEntity.getUser();
 
         AccessTokenInfo accessTokenInfo = jwtUtils.generateToken(user.getId(), user.getUsername(), user.getRole());
 
@@ -172,7 +184,36 @@ public class AuthService {
                 accessTokenInfo.getExpired_at()));
 
 
+    }
+
+    // регистрируем пользователя, проверяем, существует ли username
+    public RegistrationAnswer registration(RegistrationRequest request){
+        String username = request.getUsername();
+        Optional<User> userCheck = userRepository.findByUsername(username);
+        if (userCheck.isPresent()) return new RegistrationAnswer("username already exists", false);
+
+        User newUser = new User();
+        newUser.setRole("USER");
+        newUser.setPassword(passwordEncoder.encode(request.getPassword()));
+        newUser.setUsername(username);
+
+        userRepository.save(newUser);
+
+        return new RegistrationAnswer("registration complete. Please login", true);
 
 
+    }
+
+    // отзыв токена
+    @Transactional
+    public void simpleLogout(SimpleLogoutRequest request){
+        try {
+            String encodedToken = hashRefreshToken(request.getRefreshToken());
+            RefreshToken token = refreshTokenRepository.findByToken(encodedToken).orElseThrow();
+            token.setRevoked(true);
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
     }
 }
