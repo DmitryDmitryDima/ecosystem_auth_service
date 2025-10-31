@@ -15,5 +15,5 @@ public class LoginResponseDTO {
     // рандомный набор символов, в бд хранится в хешированном виде
     private String refreshToken;
 
-    private Long expired_at;
+
 }

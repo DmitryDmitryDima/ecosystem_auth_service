@@ -30,11 +30,13 @@ public class AuthController {
     private AuthService authService;
 
 
-    // аутентификация существуюго пользователя
+    // аутентификация существующего пользователя с помощью username и password
+    // возвращаем пару access token + refresh токен с времени просрочки access токена
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO loginRequest){
 
         Optional<LoginResponseDTO> authResult = authService.authenticate(loginRequest);
+
         return authResult
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
@@ -42,7 +44,8 @@ public class AuthController {
 
     }
 
-    // валидируем пользователя через access token
+    // валидируем пользователя через access token (endpoint вызывается из gateway фильтра)
+    // возвращаем uuid, username, role  - security context, или 401 в случае ошибки
     @GetMapping("/validate")
     public ResponseEntity<ValidationResponseDTO> validate(@RequestHeader("Authorization") String authHeader){
         // Authorization: Bearer <token>
@@ -56,6 +59,7 @@ public class AuthController {
 
 
     // обновляем access токен через refresh токен
+    // возвращаем новую пару access токен + refresh токен
     @PostMapping("/refresh")
     public ResponseEntity<RefreshResponse> refresh(@RequestBody RefreshRequest request){
 
@@ -66,6 +70,7 @@ public class AuthController {
     }
 
     // регистрация нового пользователя
+    // возвращаем сообщение (в случае ошибки оно будет объяснять, что пользователь сделал не так)
     @PostMapping("/register")
     public ResponseEntity<RegistrationAnswer> register(@RequestBody RegistrationRequest request){
 
@@ -79,7 +84,7 @@ public class AuthController {
     }
 
     // logout - пока что заключается в том, что мы делаем revoke для refresh токена, если он существует
-    // отдельный челлендж - logout на всех устройствах
+    // будущий челлендж - logout на всех устройствах
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(@RequestBody SimpleLogoutRequest logoutRequest){
 

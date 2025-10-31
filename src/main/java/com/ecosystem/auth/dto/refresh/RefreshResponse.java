@@ -14,5 +14,5 @@ public class RefreshResponse {
     // новый рефреш токен
     private String refreshToken;
 
-    private Long expired_at;
+
 }

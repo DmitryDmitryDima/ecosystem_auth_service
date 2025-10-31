@@ -11,5 +11,5 @@ public class AccessTokenInfo {
 
 
     private String accessToken;
-    private Long expired_at;
+
 }

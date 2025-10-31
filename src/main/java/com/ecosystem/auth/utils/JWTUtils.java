@@ -20,10 +20,15 @@ import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
 
+/*
+jwt можно рассматривать как паспорт - информация с него доступна всем, но подлинность и актуальность проверяется в одном месте
+Таким образом, фронтенд может извлечь информацию о том,
+кто является носителем токена, по аналогии с тем, что каждый может прочитать паспорт
+ */
 @Component
 public class JWTUtils {
 
-
+    // api ключ на основе секретной строки, в продакшене хранится в форме переменной среды, сейчас - в application properties
     private final Key secretKey;
 
     public JWTUtils(@Value("${jwt.secret}") String secret){
@@ -35,7 +40,9 @@ public class JWTUtils {
 
     // создаем токен, вкладывая информацию о uuid, username, role (эта инфа будет передана вглубь микросервисов)
     public AccessTokenInfo generateToken(UUID uuid, String username, String role){
-        Date expirationTime = new Date(System.currentTimeMillis() + 1000 * 60 * 15);
+
+
+        Date expirationTime = new Date(System.currentTimeMillis() + 1000 * 60 * 15); // вычисляем время просрочки - 15 минут
 
         String accessToken = Jwts.builder()
                 .subject(uuid.toString())
@@ -45,12 +52,11 @@ public class JWTUtils {
                 .expiration(expirationTime)  // 5 часов
                 .signWith(secretKey)
                 .compact();
-        AccessTokenInfo accessTokenInfo = new AccessTokenInfo(accessToken, expirationTime.getTime());
 
-        return accessTokenInfo;
+        return new AccessTokenInfo(accessToken, expirationTime.getTime());
     }
 
-
+    // валидация токена с secret key, извлечение содержащейся в нем информации
     public Optional<ValidationResponseDTO> validateToken(String token){
         try {
             Jws<Claims> claims = Jwts.parser().verifyWith((SecretKey) secretKey)

@@ -48,10 +48,11 @@ public class AuthService {
     }
 
     // хешируем refresh токен для бд
+    // todo - хеширование refresh токена должно содержать в себе api secret
     private String hashRefreshToken(String refreshToken) throws NoSuchAlgorithmException {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        byte[] encodedhash = digest.digest(refreshToken.getBytes(StandardCharsets.UTF_8));
-        return bytesToHex(encodedhash);
+        byte[] encodedHash = digest.digest(refreshToken.getBytes(StandardCharsets.UTF_8));
+        return bytesToHex(encodedHash);
     }
 
     // Пошаговое преобразование байтов в шестнадцатеричную строку
@@ -70,37 +71,37 @@ public class AuthService {
 
     // генерируем refresh токен
     private String generateAndSaveRefreshToken(User user) throws NoSuchAlgorithmException {
-        // генерируем, шифруем и сохраняем в бд access token
+        // генерируем raw refresh токен
         String refreshToken = generateRandomString();
 
+        // хешируем refresh токен для бд
         String refreshTokenEncoded = hashRefreshToken(refreshToken);
 
 
-
+        // создаем сущность refresh token, сохраняем ее в бд
         RefreshToken refreshTokenEntity = new RefreshToken();
         Instant now = Instant.now();
         refreshTokenEntity.setToken(refreshTokenEncoded);
         refreshTokenEntity.setCreated_at(now);
         refreshTokenEntity.setExpired_at(now.plus(10, ChronoUnit.DAYS)); // 10 дней
         refreshTokenEntity.setUser(user);
-
         refreshTokenRepository.save(refreshTokenEntity);
 
         return refreshToken;
     }
 
 
-    // аутентификация при вводу логина и пароля
+    // аутентификация при вводе логина и пароля
     public Optional<LoginResponseDTO> authenticate(LoginRequestDTO loginRequest) {
 
+        // проверка - существует ли юзер с присланным username (username - уникален)
         Optional<User> userBox = userRepository.findByUsername(loginRequest.getUsername());
-
         if (userBox.isEmpty()) return Optional.empty();
 
-
+        // извлекаем сущность юзера
         User user = userBox.get();
 
-        // проверка пароля
+        // проверка пароля на соответствие введенному пользователем (специальная функция password encoder)
         boolean passwordCheck = passwordEncoder.matches(loginRequest.getPassword(), user.getPassword());
 
         if (!passwordCheck) return Optional.empty();
@@ -109,9 +110,9 @@ public class AuthService {
         AccessTokenInfo accessTokenResponse = jwtUtils.generateToken(user.getId(), user.getUsername(), user.getRole());
 
 
-
-        String refreshToken;
         // генерируем, шифруем и сохраняем в бд refresh token
+        String refreshToken;
+
         try {
             refreshToken = generateAndSaveRefreshToken(user);
         }
@@ -119,8 +120,9 @@ public class AuthService {
             return Optional.empty();
         }
 
+        // собираем ответ для юзера
         return Optional.of(new LoginResponseDTO(accessTokenResponse.getAccessToken(),
-                refreshToken, accessTokenResponse.getExpired_at()));
+                refreshToken));
     }
 
 
@@ -140,6 +142,7 @@ public class AuthService {
     public Optional<RefreshResponse> refresh(RefreshRequest request){
 
 
+        // хешируем refresh токен для последующего его сравнения с бд
         String encodedToken;
         try {
             encodedToken = hashRefreshToken(request.getRefreshToken());
@@ -148,7 +151,7 @@ public class AuthService {
             return Optional.empty();
         }
 
-
+        // проверяем, есть ли в базе токен присланный пользователем
         Optional<RefreshToken> tokenCheck = refreshTokenRepository.findByToken(encodedToken);
 
         if (tokenCheck.isEmpty()) return Optional.empty();
@@ -160,14 +163,17 @@ public class AuthService {
             return Optional.empty();
         }
 
-        // проверка на просрочку
+        // проверка на просрочку (помечаем токен, как revoked, после чего он удаляется специальным фоновым процессом)
         if (Instant.now().isAfter(tokenEntity.getExpired_at())) {
             tokenEntity.setRevoked(true);
             return Optional.empty();
         }
 
+
+        // извлекаем связанного с токеном пользователя (manyToOne ассоциация между refresh_token & user)
         User user = tokenEntity.getUser();
 
+        // генерируем новую пару access token & refresh token
         AccessTokenInfo accessTokenInfo = jwtUtils.generateToken(user.getId(), user.getUsername(), user.getRole());
 
         String refreshToken;
@@ -180,8 +186,7 @@ public class AuthService {
         }
 
         return Optional.of(new RefreshResponse(accessTokenInfo.getAccessToken(),
-                refreshToken,
-                accessTokenInfo.getExpired_at()));
+                refreshToken));
 
 
     }
@@ -190,7 +195,7 @@ public class AuthService {
     public RegistrationAnswer registration(RegistrationRequest request){
         String username = request.getUsername();
         Optional<User> userCheck = userRepository.findByUsername(username);
-        if (userCheck.isPresent()) return new RegistrationAnswer("username already exists", false);
+        if (userCheck.isPresent()) return new RegistrationAnswer("Имя занято", false);
 
         User newUser = new User();
         newUser.setRole("USER");
@@ -199,7 +204,7 @@ public class AuthService {
 
         userRepository.save(newUser);
 
-        return new RegistrationAnswer("registration complete. Please login", true);
+        return new RegistrationAnswer("Регистрация завершена", true);
 
 
     }

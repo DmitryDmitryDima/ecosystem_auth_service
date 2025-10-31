@@ -13,11 +13,11 @@ import lombok.NoArgsConstructor;
 public class RegistrationRequest {
 
     @NotBlank(message = "username is required!")
-    @Size(min = 4, max = 30, message = "we will accept username with length between 4 and 30 symbols")
+    @Size(min = 4, max = 30, message = "Нужна длина от 4 до 30 символов")
     private String username;
 
     @NotBlank(message = "password is required")
-    @Size(min = 8, max = 50, message = "we will accept password with length between 8 and 50 symbols")
+    @Size(min = 8, max = 50, message = "Нужна длина от 8 до 50 символов")
     private String password;
 
 
