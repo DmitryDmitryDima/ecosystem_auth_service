@@ -53,7 +53,7 @@ public class JWTUtils {
                 .signWith(secretKey)
                 .compact();
 
-        return new AccessTokenInfo(accessToken, expirationTime.getTime());
+        return new AccessTokenInfo(accessToken);
     }
 
     // валидация токена с secret key, извлечение содержащейся в нем информации
