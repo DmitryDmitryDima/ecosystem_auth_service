@@ -63,6 +63,8 @@ public class AuthController {
     @PostMapping("/refresh")
     public ResponseEntity<RefreshResponse> refresh(@RequestBody RefreshRequest request){
 
+        System.out.println("refresh token fetched");
+
         Optional<RefreshResponse> refreshResult = authService.refresh(request);
         return refreshResult
                 .map(ResponseEntity::ok)
@@ -85,8 +87,10 @@ public class AuthController {
 
     // logout - пока что заключается в том, что мы делаем revoke для refresh токена, если он существует
     // будущий челлендж - logout на всех устройствах
-    @PostMapping("/logout")
+    @PostMapping("/revoke")
     public ResponseEntity<Void> logout(@RequestBody SimpleLogoutRequest logoutRequest){
+
+        System.out.println("logout");
 
         authService.simpleLogout(logoutRequest);
 

@@ -49,7 +49,7 @@ public class JWTUtils {
                 .claim("username", username)
                 .claim("role", role)
                 .issuedAt(new Date())
-                .expiration(expirationTime)  // 5 часов
+                .expiration(expirationTime)
                 .signWith(secretKey)
                 .compact();
 
