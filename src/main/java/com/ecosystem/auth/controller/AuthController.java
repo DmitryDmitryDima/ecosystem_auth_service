@@ -30,6 +30,8 @@ public class AuthController {
     private AuthService authService;
 
 
+
+
     // аутентификация существующего пользователя с помощью username и password
     // возвращаем пару access token + refresh токен с времени просрочки access токена
     @PostMapping("/login")
@@ -76,12 +78,30 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<RegistrationAnswer> register(@RequestBody RegistrationRequest request){
 
-        RegistrationAnswer answer = authService.registration(request);
 
-        return answer.isSuccess()?
-                ResponseEntity.ok(answer)
-                :
-                ResponseEntity.status(HttpStatus.CONFLICT).body(answer);
+        try {
+            RegistrationAnswer registrationAnswer = authService.registration(request);
+            return registrationAnswer.isSuccess()?
+                    ResponseEntity.ok(registrationAnswer)
+                    :
+                    ResponseEntity.status(HttpStatus.CONFLICT).body(registrationAnswer);
+
+        }
+        catch (Exception e){
+            RegistrationAnswer registrationAnswer = new RegistrationAnswer();
+            registrationAnswer.setSuccess(false);
+            registrationAnswer.setMessage("Внутренняя ошибка сервера, попробуйте позже");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(registrationAnswer);
+
+        }
+
+
+
+
+
+
+
+
 
     }
 

@@ -1,5 +1,6 @@
 package com.ecosystem.auth.service;
 
+import com.ecosystem.auth.dto.events.UserCreationEvent;
 import com.ecosystem.auth.dto.login.LoginRequestDTO;
 import com.ecosystem.auth.dto.login.LoginResponseDTO;
 import com.ecosystem.auth.dto.logout.SimpleLogoutRequest;
@@ -42,6 +43,9 @@ public class AuthService {
 
     @Autowired
     private JWTUtils jwtUtils;
+
+    @Autowired
+    private RabbitProducerService rabbitProducerService;
 
     private String generateRandomString(){
         return UUID.randomUUID().toString();
@@ -192,7 +196,8 @@ public class AuthService {
     }
 
     // регистрируем пользователя, проверяем, существует ли username
-    public RegistrationAnswer registration(RegistrationRequest request){
+    @Transactional
+    public RegistrationAnswer registration(RegistrationRequest request) throws Exception {
         String username = request.getUsername();
         Optional<User> userCheck = userRepository.findByUsername(username);
         if (userCheck.isPresent()) return new RegistrationAnswer("Имя занято", false);
@@ -203,6 +208,12 @@ public class AuthService {
         newUser.setUsername(username);
 
         userRepository.save(newUser);
+
+        // публикуем событие - в случае исключения откат транзакции
+        rabbitProducerService.generateUserCreationEvent(UserCreationEvent.builder()
+                .role(newUser.getRole()
+                        ).uuid(newUser.getId()).username(newUser.getUsername()).build());
+
 
         return new RegistrationAnswer("Регистрация завершена", true);
 
