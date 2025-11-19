@@ -211,8 +211,9 @@ public class AuthService {
 
         // публикуем событие - в случае исключения откат транзакции
         rabbitProducerService.generateUserCreationEvent(UserCreationEvent.builder()
-                .role(newUser.getRole()
-                        ).uuid(newUser.getId()).username(newUser.getUsername()).build());
+                .role(newUser.getRole())
+                .uuid(newUser.getId())
+                .username(newUser.getUsername()).build());
 
 
         return new RegistrationAnswer("Регистрация завершена", true);

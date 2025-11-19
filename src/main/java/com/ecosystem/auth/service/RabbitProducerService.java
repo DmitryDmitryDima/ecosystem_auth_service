@@ -1,6 +1,7 @@
 package com.ecosystem.auth.service;
 
 import com.ecosystem.auth.dto.events.UserCreationEvent;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -16,7 +17,7 @@ public class RabbitProducerService {
     @Autowired
     private RabbitTemplate rabbitTemplate;
 
-    @Value("${users.main_events}")
+    @Value("${users.exchange.name}")
     private String USERS_EXCHANGE_NAME;
 
 
@@ -40,7 +41,10 @@ public class RabbitProducerService {
             return message;
         };
 
-        rabbitTemplate.convertAndSend(USERS_EXCHANGE_NAME, "", event, postProcessor);
+        ObjectMapper mapper = new ObjectMapper();
+        String payload = mapper.writeValueAsString(event);
+
+        rabbitTemplate.convertAndSend(USERS_EXCHANGE_NAME, "", payload, postProcessor);
 
 
     }
