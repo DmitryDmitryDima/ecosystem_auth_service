@@ -17,7 +17,7 @@ public class RabbitProducerService {
     @Autowired
     private RabbitTemplate rabbitTemplate;
 
-    @Value("${users.exchange.name}")
+    @Value("${users.main_events.exchange.name}")
     private String USERS_EXCHANGE_NAME;
 
 
