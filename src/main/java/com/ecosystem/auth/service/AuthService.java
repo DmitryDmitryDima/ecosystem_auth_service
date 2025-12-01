@@ -8,6 +8,7 @@ import com.ecosystem.auth.dto.refresh.RefreshRequest;
 import com.ecosystem.auth.dto.refresh.RefreshResponse;
 import com.ecosystem.auth.dto.registration.RegistrationAnswer;
 import com.ecosystem.auth.dto.registration.RegistrationRequest;
+import com.ecosystem.auth.dto.resolve.ResolveAnswer;
 import com.ecosystem.auth.dto.utils.AccessTokenInfo;
 import com.ecosystem.auth.dto.validation.ValidationResponseDTO;
 import com.ecosystem.auth.model.RefreshToken;
@@ -92,6 +93,11 @@ public class AuthService {
         refreshTokenRepository.save(refreshTokenEntity);
 
         return refreshToken;
+    }
+
+    // извлекаем uuid по username
+    public ResolveAnswer resolution(String username){
+
     }
 
 

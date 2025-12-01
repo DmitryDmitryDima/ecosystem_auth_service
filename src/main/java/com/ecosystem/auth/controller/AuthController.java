@@ -8,6 +8,7 @@ import com.ecosystem.auth.dto.refresh.RefreshRequest;
 import com.ecosystem.auth.dto.refresh.RefreshResponse;
 import com.ecosystem.auth.dto.registration.RegistrationAnswer;
 import com.ecosystem.auth.dto.registration.RegistrationRequest;
+import com.ecosystem.auth.dto.resolve.ResolveAnswer;
 import com.ecosystem.auth.dto.validation.ValidationResponseDTO;
 import com.ecosystem.auth.service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +29,12 @@ public class AuthController {
 
     @Autowired
     private AuthService authService;
+
+
+
+
+
+
 
 
 
