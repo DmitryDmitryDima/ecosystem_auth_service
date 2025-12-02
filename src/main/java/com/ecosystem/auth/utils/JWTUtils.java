@@ -65,8 +65,14 @@ public class JWTUtils {
             String uuid = claims.getPayload().getSubject();
             String username = claims.getPayload().get("username", String.class);
             String role = claims.getPayload().get("role", String.class);
+            ValidationResponseDTO validationResponseDTO = ValidationResponseDTO.builder()
+                    .role(role)
+                    .username(username)
+                    .uuid(UUID.fromString(uuid))
+                    .build();
 
-            return Optional.of(new ValidationResponseDTO(UUID.fromString(uuid), username, role));
+
+            return Optional.of(validationResponseDTO);
         }
         catch (JwtException validationException){
             return Optional.empty();

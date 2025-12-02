@@ -8,7 +8,7 @@ import com.ecosystem.auth.dto.refresh.RefreshRequest;
 import com.ecosystem.auth.dto.refresh.RefreshResponse;
 import com.ecosystem.auth.dto.registration.RegistrationAnswer;
 import com.ecosystem.auth.dto.registration.RegistrationRequest;
-import com.ecosystem.auth.dto.resolve.ResolveAnswer;
+
 import com.ecosystem.auth.dto.validation.ValidationResponseDTO;
 import com.ecosystem.auth.service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
+import java.util.UUID;
 
 
 /*
@@ -60,14 +61,35 @@ public class AuthController {
     // валидируем пользователя через access token (endpoint вызывается из gateway фильтра)
     // возвращаем uuid, username, role  - security context, или 401 в случае ошибки
     @GetMapping("/validate")
-    public ResponseEntity<ValidationResponseDTO> validate(@RequestHeader("Authorization") String authHeader){
-        // Authorization: Bearer <token>
-        if(authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    public ResponseEntity<ValidationResponseDTO> validate(@RequestHeader("Authorization") String authHeader,
+                                                          @RequestHeader(value = "targetUsername", required = false) String targetUsername){
+
+        UUID target = targetUsername==null?null:authService.resolve(targetUsername).get();
+        System.out.println(target+" target resolved");
+
+        // гость
+        if(authHeader == null || !authHeader.startsWith("Bearer ") || authHeader.length() <= 7) {
+
+
+
+            return ResponseEntity.ok(ValidationResponseDTO.builder()
+                            .role("GUEST")
+                            .targetUUID(target)
+                    .build());
+
         }
         System.out.println("validation here for "+authHeader);
-        Optional<ValidationResponseDTO> validation = authService.validateToken(authHeader.substring(7));
-        return validation.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
+        Optional<ValidationResponseDTO> validationCheck = authService.validateToken(authHeader.substring(7));
+        // если пользователь, имея токен, получает ошибку, то отвечаем с 401
+        if (validationCheck.isEmpty()){
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        // дополняем dto target uuid, если оно присутствует
+        ValidationResponseDTO validationResponseDTO = validationCheck.get();
+        validationResponseDTO.setTargetUUID(target);
+        return ResponseEntity.ok(validationResponseDTO);
+
     }
 
 

@@ -8,7 +8,7 @@ import com.ecosystem.auth.dto.refresh.RefreshRequest;
 import com.ecosystem.auth.dto.refresh.RefreshResponse;
 import com.ecosystem.auth.dto.registration.RegistrationAnswer;
 import com.ecosystem.auth.dto.registration.RegistrationRequest;
-import com.ecosystem.auth.dto.resolve.ResolveAnswer;
+
 import com.ecosystem.auth.dto.utils.AccessTokenInfo;
 import com.ecosystem.auth.dto.validation.ValidationResponseDTO;
 import com.ecosystem.auth.model.RefreshToken;
@@ -95,10 +95,7 @@ public class AuthService {
         return refreshToken;
     }
 
-    // извлекаем uuid по username
-    public ResolveAnswer resolution(String username){
 
-    }
 
 
     // аутентификация при вводе логина и пароля
@@ -141,6 +138,11 @@ public class AuthService {
     public Optional<ValidationResponseDTO> validateToken(String token){
 
         return jwtUtils.validateToken(token);
+    }
+    // выясняем uuid для username
+    public Optional<UUID> resolve(String username){
+        Optional<User> user = userRepository.findByUsername(username);
+        return user.map(User::getId);
     }
 
 
@@ -217,9 +219,8 @@ public class AuthService {
 
         // публикуем событие - в случае исключения откат транзакции
         rabbitProducerService.generateUserCreationEvent(UserCreationEvent.builder()
-                .role(newUser.getRole())
-                .uuid(newUser.getId())
-                .username(newUser.getUsername()).build());
+                .uuid(newUser.getId()).build());
+
 
 
         return new RegistrationAnswer("Регистрация завершена", true);

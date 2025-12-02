@@ -17,6 +17,5 @@ public class UserCreationEvent {
     // часть контекста, дублируемого в user service
 
     private UUID uuid;
-    private String role;
-    private String username;
+
 }
