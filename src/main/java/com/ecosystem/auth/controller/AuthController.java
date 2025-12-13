@@ -9,6 +9,7 @@ import com.ecosystem.auth.dto.refresh.RefreshResponse;
 import com.ecosystem.auth.dto.registration.RegistrationAnswer;
 import com.ecosystem.auth.dto.registration.RegistrationRequest;
 
+import com.ecosystem.auth.dto.resolve.UsernameResolveDTO;
 import com.ecosystem.auth.dto.validation.ValidationResponseDTO;
 import com.ecosystem.auth.service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,6 +57,15 @@ public class AuthController {
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
 
 
+    }
+
+    @GetMapping("/resolveUUID/{uuid}")
+    public ResponseEntity<UsernameResolveDTO> resolveUsername(@PathVariable("uuid") UUID uuid){
+
+        Optional<String> username = authService.resolve(uuid);
+        return username
+                .map(s -> ResponseEntity.ok(UsernameResolveDTO.builder().username(s).build()))
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
 
     // валидируем пользователя через access token (endpoint вызывается из gateway фильтра)

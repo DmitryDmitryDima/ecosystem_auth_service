@@ -9,6 +9,7 @@ import com.ecosystem.auth.dto.refresh.RefreshResponse;
 import com.ecosystem.auth.dto.registration.RegistrationAnswer;
 import com.ecosystem.auth.dto.registration.RegistrationRequest;
 
+import com.ecosystem.auth.dto.resolve.UsernameResolveDTO;
 import com.ecosystem.auth.dto.utils.AccessTokenInfo;
 import com.ecosystem.auth.dto.validation.ValidationResponseDTO;
 import com.ecosystem.auth.model.RefreshToken;
@@ -143,6 +144,11 @@ public class AuthService {
     public Optional<UUID> resolve(String username){
         Optional<User> user = userRepository.findByUsername(username);
         return user.map(User::getId);
+    }
+
+    public Optional<String> resolve(UUID uuid){
+        Optional<User> user = userRepository.findById(uuid);
+        return user.map(User::getUsername);
     }
 
 
