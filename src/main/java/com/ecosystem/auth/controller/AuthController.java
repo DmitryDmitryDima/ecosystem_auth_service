@@ -17,6 +17,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -58,15 +60,29 @@ public class AuthController {
 
 
     }
-
+    // todo need caching
     @GetMapping("/resolveUUID/{uuid}")
     public ResponseEntity<UsernameResolveDTO> resolveUsername(@PathVariable("uuid") UUID uuid){
 
-        Optional<String> username = authService.resolve(uuid);
-        return username
-                .map(s -> ResponseEntity.ok(UsernameResolveDTO.builder().username(s).build()))
-                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+        Optional<UsernameResolveDTO> resolveDTOCheck = authService.resolve(uuid);
+        return resolveDTOCheck.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+
+
     }
+
+    @GetMapping("/resolveBatch")
+    public ResponseEntity<List<UsernameResolveDTO>> batchedResolveUsername(@RequestParam String uuids){
+        try {
+            List<UUID> parsedUUIDs = Arrays.stream(uuids.split(",")).map(UUID::fromString).toList();
+            return ResponseEntity.ok(authService.resolve(parsedUUIDs));
+        }
+        catch (Exception e){
+            e.printStackTrace();
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
 
     // валидируем пользователя через access token (endpoint вызывается из gateway фильтра)
     // возвращаем uuid, username, role  - security context, или 401 в случае ошибки

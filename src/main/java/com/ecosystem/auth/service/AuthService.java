@@ -27,6 +27,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -146,9 +147,15 @@ public class AuthService {
         return user.map(User::getId);
     }
 
-    public Optional<String> resolve(UUID uuid){
+    public Optional<UsernameResolveDTO> resolve(UUID uuid){
         Optional<User> user = userRepository.findById(uuid);
-        return user.map(User::getUsername);
+
+        return user.map(entity-> UsernameResolveDTO.builder().uuid(uuid).username(entity.getUsername()).build());
+    }
+
+    public List<UsernameResolveDTO> resolve(List<UUID> uuids){
+        List<User> users = userRepository.findAllById(uuids);
+        return users.stream().map(user->UsernameResolveDTO.builder().username(user.getUsername()).uuid(user.getId()).build()).toList();
     }
 
 
