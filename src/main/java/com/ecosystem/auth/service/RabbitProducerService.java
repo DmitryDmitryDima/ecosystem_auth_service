@@ -36,6 +36,9 @@ public class RabbitProducerService {
 
     // выброс исключения означает, что сообщение не было обработано как нужно - регистрация отменяется
     public void generateUserCreationEvent(UserCreationEvent event) throws Exception{
+
+        // todo данная логика не актуальна - user credentials создаются лениво - это больше соответствует философии api gateway + auth
+        /*
         MessagePostProcessor postProcessor = (message )-> {
             message.getMessageProperties().setHeader("event_type", "user_creation");
             return message;
@@ -45,6 +48,8 @@ public class RabbitProducerService {
         String payload = mapper.writeValueAsString(event);
 
         rabbitTemplate.convertAndSend(USERS_EXCHANGE_NAME, "", payload, postProcessor);
+
+         */
 
 
     }
