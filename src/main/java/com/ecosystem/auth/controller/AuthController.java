@@ -62,7 +62,7 @@ public class AuthController {
     }
     // todo need caching
     @GetMapping("/resolveUUID/{uuid}")
-    public ResponseEntity<UsernameResolveDTO> resolveUsername(@PathVariable("uuid") UUID uuid){
+    public ResponseEntity<UsernameResolveDTO> resolveUUID(@PathVariable("uuid") UUID uuid){
 
         Optional<UsernameResolveDTO> resolveDTOCheck = authService.resolve(uuid);
         return resolveDTOCheck.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
@@ -81,6 +81,14 @@ public class AuthController {
 
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+    }
+
+    @GetMapping("/resolveUsername/{username}")
+    public ResponseEntity<UUID> resolveUsername(@PathVariable("username") String username){
+        Optional<UUID> uuid = authService.resolve(username);
+        return uuid.map(ResponseEntity::ok).orElseGet(()->
+            ResponseEntity.status(HttpStatus.NOT_FOUND).build()
+        );
     }
 
 
