@@ -9,10 +9,13 @@ import com.ecosystem.auth.dto.refresh.RefreshResponse;
 import com.ecosystem.auth.dto.registration.RegistrationAnswer;
 import com.ecosystem.auth.dto.registration.RegistrationRequest;
 
-import com.ecosystem.auth.dto.resolve.UsernameResolveDTO;
+import com.ecosystem.auth.dto.resolve.UsernameUUIDPair;
 import com.ecosystem.auth.dto.validation.ValidationResponseDTO;
 import com.ecosystem.auth.service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -60,18 +63,33 @@ public class AuthController {
 
 
     }
+
+
+
+
+    @GetMapping("/search")
+    public ResponseEntity<Page<UsernameUUIDPair>> search(Pageable pageable, @RequestParam("startsWith") String startsWith){
+        System.out.println(pageable.getPageSize());
+        System.out.println(pageable.getPageNumber());
+        System.out.println(pageable);
+        return ResponseEntity.ok(authService.searchUsers(pageable, startsWith));
+    }
+
+
+
+
     // todo need caching
     @GetMapping("/resolveUUID/{uuid}")
-    public ResponseEntity<UsernameResolveDTO> resolveUUID(@PathVariable("uuid") UUID uuid){
+    public ResponseEntity<UsernameUUIDPair> resolveUUID(@PathVariable("uuid") UUID uuid){
 
-        Optional<UsernameResolveDTO> resolveDTOCheck = authService.resolve(uuid);
+        Optional<UsernameUUIDPair> resolveDTOCheck = authService.resolve(uuid);
         return resolveDTOCheck.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
 
 
     }
 
     @GetMapping("/resolveBatch")
-    public ResponseEntity<List<UsernameResolveDTO>> batchedResolveUsername(@RequestParam String uuids){
+    public ResponseEntity<List<UsernameUUIDPair>> batchedResolveUsername(@RequestParam String uuids){
         try {
             List<UUID> parsedUUIDs = Arrays.stream(uuids.split(",")).map(UUID::fromString).toList();
             return ResponseEntity.ok(authService.resolve(parsedUUIDs));

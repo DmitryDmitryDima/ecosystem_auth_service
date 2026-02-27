@@ -12,7 +12,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class UsernameResolveDTO {
+public class UsernameUUIDPair {
     private String username;
     private UUID uuid;
 }

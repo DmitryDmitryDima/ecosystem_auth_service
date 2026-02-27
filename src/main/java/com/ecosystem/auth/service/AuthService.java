@@ -9,7 +9,7 @@ import com.ecosystem.auth.dto.refresh.RefreshResponse;
 import com.ecosystem.auth.dto.registration.RegistrationAnswer;
 import com.ecosystem.auth.dto.registration.RegistrationRequest;
 
-import com.ecosystem.auth.dto.resolve.UsernameResolveDTO;
+import com.ecosystem.auth.dto.resolve.UsernameUUIDPair;
 import com.ecosystem.auth.dto.utils.AccessTokenInfo;
 import com.ecosystem.auth.dto.validation.ValidationResponseDTO;
 import com.ecosystem.auth.model.RefreshToken;
@@ -19,6 +19,8 @@ import com.ecosystem.auth.repository.UserRepository;
 import com.ecosystem.auth.utils.JWTUtils;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -97,6 +99,20 @@ public class AuthService {
         return refreshToken;
     }
 
+    public Page<UsernameUUIDPair> searchUsers(Pageable pageable, String startsWith){
+        if (pageable.getPageSize()>1000) throw new IllegalStateException("слишком большой запрос");
+
+        return userRepository.findByUsernameStartsWith(pageable, startsWith)
+
+                .map(entity->{
+                    System.out.println(entity.getUsername());
+                    return UsernameUUIDPair.builder()
+                        .username(entity.getUsername())
+                        .uuid(entity.getId())
+                        .build();
+                });
+    }
+
 
 
 
@@ -147,15 +163,15 @@ public class AuthService {
         return user.map(User::getId);
     }
 
-    public Optional<UsernameResolveDTO> resolve(UUID uuid){
+    public Optional<UsernameUUIDPair> resolve(UUID uuid){
         Optional<User> user = userRepository.findById(uuid);
 
-        return user.map(entity-> UsernameResolveDTO.builder().uuid(uuid).username(entity.getUsername()).build());
+        return user.map(entity-> UsernameUUIDPair.builder().uuid(uuid).username(entity.getUsername()).build());
     }
 
-    public List<UsernameResolveDTO> resolve(List<UUID> uuids){
+    public List<UsernameUUIDPair> resolve(List<UUID> uuids){
         List<User> users = userRepository.findAllById(uuids);
-        return users.stream().map(user->UsernameResolveDTO.builder().username(user.getUsername()).uuid(user.getId()).build()).toList();
+        return users.stream().map(user-> UsernameUUIDPair.builder().username(user.getUsername()).uuid(user.getId()).build()).toList();
     }
 
 
