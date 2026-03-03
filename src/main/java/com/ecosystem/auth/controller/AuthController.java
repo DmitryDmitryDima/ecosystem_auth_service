@@ -100,7 +100,7 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-
+//
     @GetMapping("/resolveUsername/{username}")
     public ResponseEntity<UUID> resolveUsername(@PathVariable("username") String username){
         Optional<UUID> uuid = authService.resolve(username);
