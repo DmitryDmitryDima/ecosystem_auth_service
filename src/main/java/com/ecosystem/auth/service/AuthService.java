@@ -180,13 +180,13 @@ public class AuthService {
 
     // обновляем access и refresh токены с помощью refresh токена
     @Transactional
-    public Optional<RefreshResponse> refresh(RefreshRequest request){
+    public Optional<RefreshResponse> refresh(String token){
 
 
         // хешируем refresh токен для последующего его сравнения с бд
         String encodedToken;
         try {
-            encodedToken = hashRefreshToken(request.getRefreshToken());
+            encodedToken = hashRefreshToken(token);
         }
         catch (Exception e){
             return Optional.empty();
@@ -259,9 +259,9 @@ public class AuthService {
 
     // отзыв токена
     @Transactional
-    public void simpleLogout(SimpleLogoutRequest request){
+    public void simpleLogout(String refreshToken){
         try {
-            String encodedToken = hashRefreshToken(request.getRefreshToken());
+            String encodedToken = hashRefreshToken(refreshToken);
             RefreshToken token = refreshTokenRepository.findByToken(encodedToken).orElseThrow();
             token.setRevoked(true);
         }

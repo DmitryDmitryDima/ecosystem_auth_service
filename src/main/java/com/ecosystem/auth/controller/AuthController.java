@@ -12,6 +12,9 @@ import com.ecosystem.auth.dto.registration.RegistrationRequest;
 import com.ecosystem.auth.dto.resolve.UsernameUUIDPair;
 import com.ecosystem.auth.dto.validation.ValidationResponseDTO;
 import com.ecosystem.auth.service.AuthService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -40,6 +43,26 @@ public class AuthController {
 
 
 
+    @GetMapping("/identify")
+    public ResponseEntity<UsernameUUIDPair> identify(@CookieValue(value = "accessToken", required = false) String accessToken){
+        // для гостя - пустые поля
+        if (accessToken==null) return ResponseEntity.ok(new UsernameUUIDPair());
+
+        Optional<ValidationResponseDTO> validationCheck = authService.validateToken(accessToken);
+        // если пользователь, имея токен, получает ошибку, то отвечаем с 401
+        return validationCheck.map(validationResponseDTO -> ResponseEntity.ok(UsernameUUIDPair.builder()
+                .uuid(validationResponseDTO.getUuid())
+                .username(validationResponseDTO.getUsername())
+                .build()))
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
+
+
+    }
+
+
+
+
+
 
 
 
@@ -53,13 +76,39 @@ public class AuthController {
     // аутентификация существующего пользователя с помощью username и password
     // возвращаем пару access token + refresh токен с времени просрочки access токена
     @PostMapping("/login")
-    public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO loginRequest){
+    public ResponseEntity<Void> login(@RequestBody LoginRequestDTO loginRequest, HttpServletResponse response){
+
+        System.out.println("login request");
+
+
 
         Optional<LoginResponseDTO> authResult = authService.authenticate(loginRequest);
+        if (authResult.isEmpty()) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
-        return authResult
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
+
+        Cookie accessCookie = new Cookie("accessToken", authResult.get().getAccessToken());
+        accessCookie.setHttpOnly(true);
+        accessCookie.setPath("/");
+        accessCookie.setMaxAge(7 * 24 * 60 * 60);
+
+        Cookie refreshCookie = new Cookie("refreshToken", authResult.get().getRefreshToken());
+        refreshCookie.setHttpOnly(true);
+        refreshCookie.setPath("/");
+        refreshCookie.setMaxAge(7 * 24 * 60 * 60);
+
+
+
+        response.addCookie(accessCookie);
+        response.addCookie(refreshCookie);
+
+        return ResponseEntity.noContent().build();
+
+
+
+
+
+
+
 
 
     }
@@ -112,15 +161,21 @@ public class AuthController {
 
     // валидируем пользователя через access token (endpoint вызывается из gateway фильтра)
     // возвращаем uuid, username, role  - security context, или 401 в случае ошибки
+
     @GetMapping("/validate")
-    public ResponseEntity<ValidationResponseDTO> validate(@RequestHeader("Authorization") String authHeader,
+    public ResponseEntity<ValidationResponseDTO> validate(
+                                                          @CookieValue(value = "accessToken", required = false) String accessToken,
                                                           @RequestHeader(value = "targetUsername", required = false) String targetUsername){
 
+        System.out.println("validate request");
+
         UUID target = targetUsername==null?null:authService.resolve(targetUsername).get();
-        System.out.println(target+" target resolved");
+
+
+
 
         // гость
-        if(authHeader == null || !authHeader.startsWith("Bearer ") || authHeader.length() <= 7) {
+        if(accessToken==null) {
 
 
 
@@ -130,8 +185,10 @@ public class AuthController {
                     .build());
 
         }
-        System.out.println("validation here for "+authHeader);
-        Optional<ValidationResponseDTO> validationCheck = authService.validateToken(authHeader.substring(7));
+
+
+
+        Optional<ValidationResponseDTO> validationCheck = authService.validateToken(accessToken);
         // если пользователь, имея токен, получает ошибку, то отвечаем с 401
         if (validationCheck.isEmpty()){
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -148,15 +205,35 @@ public class AuthController {
     // обновляем access токен через refresh токен
     // возвращаем новую пару access токен + refresh токен
     @PostMapping("/refresh")
-    public ResponseEntity<RefreshResponse> refresh(@RequestBody RefreshRequest request){
+    public ResponseEntity<Void> refresh(@CookieValue(value = "refreshToken", required = false) String refreshToken,
+                                        HttpServletResponse response){
 
-        System.out.println("refresh token fetched");
+        System.out.println("refresh request");
+        if (refreshToken == null){
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
-        Optional<RefreshResponse> refreshResult = authService.refresh(request);
-        return refreshResult
-                .map(ResponseEntity::ok)
-                .orElseGet(()->ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
+        Optional<RefreshResponse> refreshResult = authService.refresh(refreshToken);
+        if (refreshResult.isEmpty()){
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        else {
+            Cookie accessCookie = new Cookie("accessToken", refreshResult.get().getAccessToken());
+            accessCookie.setHttpOnly(true);
+            accessCookie.setPath("/");
+            accessCookie.setMaxAge(7 * 24 * 60 * 60);
+
+            Cookie refreshCookie = new Cookie("refreshToken", refreshResult.get().getRefreshToken());
+            refreshCookie.setHttpOnly(true);
+            refreshCookie.setPath("/");
+            refreshCookie.setMaxAge(7 * 24 * 60 * 60);
+            response.addCookie(accessCookie);
+            response.addCookie(refreshCookie);
+        }
+        return ResponseEntity.noContent().build(); // 204
     }
+
+
 
     // регистрация нового пользователя
     // возвращаем сообщение (в случае ошибки оно будет объяснять, что пользователь сделал не так)
@@ -191,13 +268,31 @@ public class AuthController {
     }
 
     // logout - пока что заключается в том, что мы делаем revoke для refresh токена, если он существует
-    // будущий челлендж - logout на всех устройствах
     @PostMapping("/revoke")
-    public ResponseEntity<Void> logout(@RequestBody SimpleLogoutRequest logoutRequest){
+    public ResponseEntity<Void> logout(@CookieValue(value = "refreshToken", required = false) String refreshToken,
+                                       HttpServletResponse response){
 
         System.out.println("logout");
 
-        authService.simpleLogout(logoutRequest);
+        if (refreshToken!=null){
+            authService.simpleLogout(refreshToken);
+        }
+
+
+
+        Cookie accessCookie = new Cookie("accessToken",null);
+        accessCookie.setMaxAge(0); // мгновенное удаление из браузера
+        accessCookie.setHttpOnly(true);
+        accessCookie.setPath("/");
+
+
+        Cookie refreshCookie = new Cookie("refreshToken",null);
+        refreshCookie.setMaxAge(0); // мгновенное удаление из браузера
+        refreshCookie.setHttpOnly(true);
+        refreshCookie.setPath("/");
+
+        response.addCookie(accessCookie);
+        response.addCookie(refreshCookie);
 
         return ResponseEntity.noContent().build();
     }
