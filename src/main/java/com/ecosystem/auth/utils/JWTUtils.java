@@ -42,7 +42,7 @@ public class JWTUtils {
     public AccessTokenInfo generateToken(UUID uuid, String username, String role){
 
 
-        Date expirationTime = new Date(System.currentTimeMillis() + 1000 * 60 * 1); // вычисляем время просрочки - 15 минут
+        Date expirationTime = new Date(System.currentTimeMillis() + 1000 * 60 * 60); // вычисляем время просрочки - 60 минут
 
         String accessToken = Jwts.builder()
                 .subject(uuid.toString())
