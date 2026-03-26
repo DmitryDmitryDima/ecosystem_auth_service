@@ -17,6 +17,7 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class RabbitConfig {
+    //
 
     @Value("${users.main_events.exchange.name}")
     private String USERS_EXCHANGE_NAME;
