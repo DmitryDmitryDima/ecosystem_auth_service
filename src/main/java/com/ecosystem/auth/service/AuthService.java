@@ -257,7 +257,7 @@ public class AuthService {
 
     }
 
-    // отзыв токена
+    // отзыв конкретного токена
     @Transactional
     public void simpleLogout(String refreshToken){
         try {
