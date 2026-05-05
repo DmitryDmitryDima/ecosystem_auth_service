@@ -21,15 +21,19 @@ public class Initializer implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
 
-        Optional<User> check = userRepository.findByUsername("admin");
+        Optional<User> check = userRepository.findByUsername("admin2");
         if (check.isEmpty()){
             User admin = new User();
             admin.setPassword(encoder.encode("12345678"));
-            admin.setUsername("admin");
+            admin.setUsername("admin2");
             admin.setRole("ADMIN");
 
             userRepository.save(admin);
         }
+
+
+
+
 
 
 

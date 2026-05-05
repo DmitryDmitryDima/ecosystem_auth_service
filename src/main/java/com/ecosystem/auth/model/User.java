@@ -3,6 +3,8 @@ package com.ecosystem.auth.model;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.UuidGenerator;
+import org.hibernate.id.uuid.UuidVersion7Strategy;
 
 import java.util.UUID;
 
@@ -12,13 +14,16 @@ user uuid - корневая сущность для всей экосистем
  */
 @Entity
 @Table(name="users")
-
 @Getter
 @Setter
 public class User {
 
+    /*
+    пример перехода на uuid v7 формат
+     */
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue
+    @UuidGenerator(algorithm = UuidVersion7Strategy.class)
     private UUID id;
 
     @Column(unique = true, nullable = false, length = 50)

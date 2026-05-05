@@ -3,6 +3,8 @@ package com.ecosystem.auth.model;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.UuidGenerator;
+import org.hibernate.id.uuid.UuidVersion7Strategy;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -18,7 +20,8 @@ public class RefreshToken {
     внутреннее значение не передается никому
      */
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue
+    @UuidGenerator(algorithm = UuidVersion7Strategy.class)
     private UUID id;
 
     // хешируется так же, как и пароль. У юзера хранится значение без хеширования
